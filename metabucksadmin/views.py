@@ -65,7 +65,7 @@ class TransactionsViewset(ModelViewSet):
                         'sender__wallet_address', 'transaction_type']
     
     def list(self, request, *args, **kwargs):
-        wallet_address_from_cookie = self.request.COOKIES.get('address')
+        wallet_address_from_cookie = self.request.query_params.get('address')
         if wallet_address_from_cookie is None:
             return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
             
@@ -93,7 +93,7 @@ class UserReferralsViewset(ModelViewSet):
     filterset_fields = ['transaction_type']
 
     def list(self, request, *args, **kwargs):
-        wallet_address_from_cookie = self.request.COOKIES.get('address')
+        wallet_address_from_cookie = self.request.query_params.get('address')
         if not wallet_address_from_cookie:
             return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
             
