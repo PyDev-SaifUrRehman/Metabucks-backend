@@ -174,7 +174,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         try:
             referral_commission = CommissionUpdate.objects.get().commission_percentage
         except:
-            referral_commission = 0
+            referral_commission = 5
         referral_commission = amount * referral_commission/100
 
         try:
