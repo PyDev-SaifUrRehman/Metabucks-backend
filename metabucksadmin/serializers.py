@@ -25,8 +25,6 @@ class AdminSerializer(serializers.ModelSerializer):
 
 
 class GetAdminSerializer(serializers.ModelSerializer):
-    # wallet_address = serializers.CharField(required=True)
-    # user_type = serializers.CharField(required=False)
 
     class Meta:
         model = AdminUser
@@ -41,19 +39,6 @@ class GetAdminSerializer(serializers.ModelSerializer):
         return value
 
 
-# class AddressToAdminUserField(serializers.RelatedField):
-#     def to_internal_value(self, value):
-#         try:
-#             admin_user = self.queryset.get(wallet_address=value)
-#             return admin_user
-#         except AdminUser.DoesNotExist:
-#             raise serializers.ValidationError(
-#                 "Admin user with this wallet address does not exist.")
-
-#     def to_representation(self, value):
-#         return value.wallet_address
-
-
 class AdminTransactionSerializer(serializers.ModelSerializer):
     sender = serializers.CharField(read_only=True)
 
@@ -63,8 +48,8 @@ class AdminTransactionSerializer(serializers.ModelSerializer):
                   'crypto_name', 'amount', 'timestamp']
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -76,8 +61,11 @@ class AdminTransactionSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        attrs['sender'] = admin_user
-        return attrs
+            attrs['sender'] = admin_user
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class AdminReferralSerializer(serializers.ModelSerializer):
@@ -107,8 +95,8 @@ class ProfitUpdateSerializer(serializers.ModelSerializer):
         fields = ('profit_percentage',)
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -116,11 +104,13 @@ class ProfitUpdateSerializer(serializers.ModelSerializer):
             except AdminUser.DoesNotExist:
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class ProtocolFeeSerializer(serializers.ModelSerializer):
@@ -135,8 +125,8 @@ class ProtocolFeeSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -148,7 +138,10 @@ class ProtocolFeeSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class CommissionUpdateSerializer(serializers.ModelSerializer):
@@ -163,8 +156,8 @@ class CommissionUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -176,7 +169,10 @@ class CommissionUpdateSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class MinimumDepositSerializer(serializers.ModelSerializer):
@@ -185,8 +181,8 @@ class MinimumDepositSerializer(serializers.ModelSerializer):
         fields = ('amount',)
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -198,8 +194,11 @@ class MinimumDepositSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action")
-        attrs['sender'] = admin_user
-        return attrs
+            attrs['sender'] = admin_user
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class MinimumWithdrawSerializer(serializers.ModelSerializer):
@@ -208,8 +207,8 @@ class MinimumWithdrawSerializer(serializers.ModelSerializer):
         fields = ('amount',)
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -217,11 +216,13 @@ class MinimumWithdrawSerializer(serializers.ModelSerializer):
             except AdminUser.DoesNotExist:
                 raise ValidationError(
                     "You don't have permission to perform this action")
-
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class WalletToPoolSerializer(serializers.ModelSerializer):
@@ -230,8 +231,8 @@ class WalletToPoolSerializer(serializers.ModelSerializer):
         fields = ('wallet_address', 'deposit_amount', 'maturity_amount')
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -243,7 +244,10 @@ class WalletToPoolSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class ManagerSerializer(serializers.ModelSerializer):
@@ -256,9 +260,8 @@ class ManagerSerializer(serializers.ModelSerializer):
                   'payout_balance', 'maturity', 'total_deposit', 'total_withdrawal', 'user_type']
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
-        print("wal", wallet_address_from_cookie)
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -270,7 +273,10 @@ class ManagerSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
     def validate_wallet_address(self, value):
 
@@ -286,8 +292,8 @@ class TopAnnouncementSerializer(serializers.ModelSerializer):
         fields = ('announcement_text', 'announcement_link')
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -299,14 +305,17 @@ class TopAnnouncementSerializer(serializers.ModelSerializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class AdminManagerSerializer(serializers.Serializer):
 
     def validate(self, attrs):
-        wallet_address_from_cookie = self.context['request'].COOKIES.get(
-            'wallet_address')
+        wallet_address_from_cookie = self.context['request'].query_params.get(
+            'address')
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -318,8 +327,10 @@ class AdminManagerSerializer(serializers.Serializer):
             if admin_user.user_type != 'Admin':
                 raise ValidationError(
                     "You don't have permission to perform this action.")
-        return attrs
-
+            return attrs
+        else:
+            raise serializers.ValidationError(
+                "No wallet address")
 
 
 class GetAdminWallet(serializers.Serializer):

@@ -1,11 +1,9 @@
 from django.db import models
 from metabucksapp.models import BaseUser
 
-
 class AdminUser(BaseUser):
     pool_balance = models.PositiveBigIntegerField(default=0)
     payout_balance = models.PositiveBigIntegerField(default=0)
-
 
     def save(self, *args, **kwargs):
         self.user_type = 'Admin'

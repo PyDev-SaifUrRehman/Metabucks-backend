@@ -19,34 +19,12 @@ from metabucksapp.models import ClientUser
 
 class AdminUserViewset(ModelViewSet):
     serializer_class = AdminSerializer
-    # queryset = ClientUser.objects.all
-
-    # def list(self, request, *args, **kwargs):
-
-    #     wallet_address_from_cookie = self.request.COOKIES.get('wallet_address')
-    #     print("wa", wallet_address_from_cookie)
-    #     if wallet_address_from_cookie:
-    #         try:
-    #             admin_user = AdminUser.objects.get(
-    #                 wallet_address=wallet_address_from_cookie)
-    #         except AdminUser.DoesNotExist:
-    #             return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
-
-    #         if admin_user.user_type != 'Admin':
-    #             return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
-    #     queryset = AdminUser.objects.filter(
-    #         wallet_address=wallet_address_from_cookie)
-    #     print(queryset)
-    #     serializer = GetAdminSerializer(queryset, many=True)
-    #     return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def list(self, request, *args, **kwargs):
 
-        wallet_address_from_cookie = self.request.COOKIES.get('wallet_address')
-        print("wa", wallet_address_from_cookie)
+        wallet_address_from_cookie = self.request.query_params.get('address')
         if not wallet_address_from_cookie:
-            return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
-            
+            return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)    
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
@@ -57,14 +35,10 @@ class AdminUserViewset(ModelViewSet):
                     admin_user = ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
                 except ManagerUser.DoesNotExist:
                     return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
-
         if admin_user.user_type not in ['Admin', 'Manager']:
             return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
-        
-
         queryset = admin_user
         serializer = GetAdminSerializer(queryset, many=True)
-
         total_deposit = Transaction.objects.filter(transaction_type = 'Deposit').aggregate(depo = Sum("amount"))["depo"] or 0
         total_withdrawal = Transaction.objects.filter(transaction_type = 'Withdrawal').aggregate(withdraw = Sum("amount"))["withdraw"] or 0
         total_maturity = ClientUser.objects.all().aggregate(maturity = Sum("maturity"))["maturity"] or 0
@@ -75,10 +49,12 @@ class AdminUserViewset(ModelViewSet):
             'total_withdrawal': total_withdrawal,
             'total_maturity': total_deposit*2,
         }
+        queryset.total_deposit = total_deposit
+        queryset.total_withdrawal = total_withdrawal
+        queryset.maturity = total_deposit*2
+        queryset.save()
 
         return Response({"data": data}, status=status.HTTP_200_OK)
-
-
 
 
 class TransactionsViewset(ModelViewSet):
@@ -89,18 +65,14 @@ class TransactionsViewset(ModelViewSet):
                         'sender__wallet_address', 'transaction_type']
     
     def list(self, request, *args, **kwargs):
-        print("aaaaaaa")
-        wallet_address_from_cookie = self.request.COOKIES.get('wallet_address')
-        print("wa", wallet_address_from_cookie)
+        wallet_address_from_cookie = self.request.COOKIES.get('address')
         if wallet_address_from_cookie is None:
-            print("nnnnnn")
-            return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
             
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
                     wallet_address=wallet_address_from_cookie) or ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
-                print("admin", admin_user)
             except AdminUser.DoesNotExist:
                 try:
                     admin_user = ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
@@ -113,7 +85,6 @@ class TransactionsViewset(ModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
-from rest_framework.exceptions import ValidationError
 class UserReferralsViewset(ModelViewSet):
 
     queryset = Transaction.objects.all()
@@ -122,16 +93,14 @@ class UserReferralsViewset(ModelViewSet):
     filterset_fields = ['transaction_type']
 
     def list(self, request, *args, **kwargs):
-        wallet_address_from_cookie = self.request.COOKIES.get('wallet_address')
-        print("wa", wallet_address_from_cookie)
+        wallet_address_from_cookie = self.request.COOKIES.get('address')
         if not wallet_address_from_cookie:
-            return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
             
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
                     wallet_address=wallet_address_from_cookie) or ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
-                print("admin", admin_user)
             except AdminUser.DoesNotExist:
                 try:
                     admin_user = ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
@@ -233,7 +202,6 @@ class TopAnnouncementViewSet(viewsets.ModelViewSet):
 
 class AdminAndManagerListViewset(viewsets.GenericViewSet, mixins.CreateModelMixin):
     serializer_class = AdminManagerSerializer
-    # queryset = admi
 
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(
@@ -241,5 +209,5 @@ class AdminAndManagerListViewset(viewsets.GenericViewSet, mixins.CreateModelMixi
         serializer.is_valid(raise_exception=True)
         admin_list = AdminUser.objects.all().values('wallet_address')
         manager_list = ManagerUser.objects.all().values('wallet_address')
-        return Response({"admins:": admin_list, "managers": manager_list}, status=status.HTTP_200_OK)
+        return Response({"admins": admin_list, "managers": manager_list}, status=status.HTTP_200_OK)
 
