@@ -234,12 +234,25 @@ class AdminAndManagerListViewset(viewsets.GenericViewSet, mixins.CreateModelMixi
         return Response({"admins": admin_list, "managers": manager_list}, status=status.HTTP_200_OK)
 
 
-class CreateClientUserViewSet(viewsets.ModelViewSet):
+class CreateClientUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     queryset = ClientUser.objects.all()
     serializer_class = ClientUserSerializer
 
     def create(self, request):
-    
+        wallet_address_from_cookie = self.request.query_params.get('address')
+        if wallet_address_from_cookie is None:
+            return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
+       
+        if wallet_address_from_cookie:
+            try:
+                admin_user = AdminUser.objects.get(
+                    wallet_address=wallet_address_from_cookie)
+            except AdminUser.DoesNotExist:
+                return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+        
+        if admin_user.user_type not in ['Admin']:
+            return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+        
         new_user_referral_code = generate_invitation_code()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
