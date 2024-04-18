@@ -316,21 +316,26 @@ class AdminManagerSerializer(serializers.Serializer):
     def validate(self, attrs):
         wallet_address_from_cookie = self.context['request'].query_params.get(
             'address')
+        if wallet_address_from_cookie is None:
+            # return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
+            raise ValidationError(
+                    "No wallet address")
+            
         if wallet_address_from_cookie:
             try:
                 admin_user = AdminUser.objects.get(
-                    wallet_address=wallet_address_from_cookie)
+                    wallet_address=wallet_address_from_cookie) or ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
             except AdminUser.DoesNotExist:
-                raise ValidationError(
+                try:
+                    admin_user = ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
+                except ManagerUser.DoesNotExist:
+                    raise ValidationError(
                     "You don't have permission to perform this action.")
 
-            if admin_user.user_type != 'Admin':
-                raise ValidationError(
+        if admin_user.user_type not in ['Admin', 'Manager']:
+            raise ValidationError(
                     "You don't have permission to perform this action.")
-            return attrs
-        else:
-            raise serializers.ValidationError(
-                "No wallet address")
+        return attrs
 
 
 class GetAdminWallet(serializers.Serializer):

@@ -15,6 +15,8 @@ from django.db.models import Sum
 from .models import AdminUser, AdminTransaction, BaseUser, ProfitUpdate, ProtocolFee, CommissionUpdate, MinimumDeposit, MinimumWithdraw, WalletToPool, TopAnnouncement, ManagerUser
 from .serializers import AdminSerializer, AdminTransactionSerializer, AdminReferralSerializer, ProfitUpdateSerializer, ProtocolFeeSerializer, CommissionUpdateSerializer, MinimumDepositSerializer, MinimumWithdrawSerializer, WalletToPoolSerializer, TopAnnouncementSerializer, ManagerSerializer, AdminManagerSerializer, GetAdminSerializer
 from metabucksapp.models import ClientUser
+from metabucksapp.serializers import ClientUserSerializer
+from metabucksapp.utils import generate_invitation_code
 
 
 class AdminUserViewset(ModelViewSet):
@@ -194,6 +196,26 @@ class AdminManagerViewset(viewsets.ModelViewSet):
     serializer_class = ManagerSerializer
     lookup_field = 'wallet_address'
 
+    def destroy(self, request, *args, **kwargs):
+        wallet_address_from_cookie = self.request.query_params.get('address')
+        if wallet_address_from_cookie is None:
+            return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
+            
+        if wallet_address_from_cookie:
+            try:
+                admin_user = AdminUser.objects.get(
+                    wallet_address=wallet_address_from_cookie)
+            except AdminUser.DoesNotExist:
+                
+                return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+
+        if admin_user.user_type not in ['Admin']:
+            return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+        
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"msg":"Manager Deleted"}, status=status.HTTP_204_NO_CONTENT)
+
 
 class TopAnnouncementViewSet(viewsets.ModelViewSet):
     queryset = TopAnnouncement.objects.all()
@@ -211,3 +233,17 @@ class AdminAndManagerListViewset(viewsets.GenericViewSet, mixins.CreateModelMixi
         manager_list = ManagerUser.objects.all().values('wallet_address')
         return Response({"admins": admin_list, "managers": manager_list}, status=status.HTTP_200_OK)
 
+
+class CreateClientUserViewSet(viewsets.ModelViewSet):
+    queryset = ClientUser.objects.all()
+    serializer_class = ClientUserSerializer
+
+    def create(self, request):
+    
+        new_user_referral_code = generate_invitation_code()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save(referral_code=new_user_referral_code)
+        user.save()
+        serializer_data = serializer.data
+        return Response(serializer_data, status=status.HTTP_201_CREATED)
