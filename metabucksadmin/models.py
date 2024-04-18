@@ -41,23 +41,23 @@ class ProfitUpdate(models.Model):
 
 class ProtocolFee(models.Model):
     deposit_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=10, decimal_places=2, default=5)
     withdraw_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=10, decimal_places=2, default=5)
     protocol_fee_wallets = models.JSONField(default=list, blank=True)
 
 
 class CommissionUpdate(models.Model):
     commission_percentage = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.0)
+        max_digits=5, decimal_places=2, default=5.0)
 
 
 class MinimumDeposit(models.Model):
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=50)
 
 
 class MinimumWithdraw(models.Model):
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=50)
 
 
 class WalletToPool(models.Model):

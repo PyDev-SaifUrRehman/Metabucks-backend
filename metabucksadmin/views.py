@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import mixins
 from metabucksapp.models import Referral
 from metabucksapp.serializers import ReferralSerializer
@@ -260,3 +261,34 @@ class CreateClientUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         user.save()
         serializer_data = serializer.data
         return Response(serializer_data, status=status.HTTP_201_CREATED)
+
+class GetSettingAttributesViewset(viewsets.ModelViewSet):
+
+    def list(self, request, *args, **kwargs):
+        data = {}
+
+        try:
+            minimum_withdraw = MinimumWithdraw.objects.get(pk=1).amount
+        except ObjectDoesNotExist:
+            minimum_withdraw = 50.0
+
+        try:
+            minimum_deposit = MinimumDeposit.objects.get(pk=1).amount
+        except ObjectDoesNotExist:
+            minimum_deposit = 50.0
+
+        try:
+            protocol_fee = ProtocolFee.objects.get(pk=1)
+            deposit_fee = protocol_fee.deposit_fee
+            withdraw_fee = protocol_fee.withdraw_fee
+        except ObjectDoesNotExist:
+            deposit_fee = 5.0
+            withdraw_fee = 5.0
+
+        data['minimum_withdraw'] = minimum_withdraw
+        data['minimum_deposit'] = minimum_deposit
+        data['deposit_fee'] = deposit_fee
+        data['withdraw_fee'] = withdraw_fee
+
+        return Response(data, status=status.HTTP_200_OK)
+

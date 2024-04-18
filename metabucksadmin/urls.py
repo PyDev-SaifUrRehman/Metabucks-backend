@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import AdminUserViewset, TransactionsViewset, UserReferralsViewset, ProfitUpdateViewSet, ProtocolFeeViewSet, CommissionUpdateViewSet, MinimumDepositViewSet, MinimumWithdrawViewSet, WalletToPoolViewSet, TopAnnouncementViewSet, AdminManagerViewset, AdminAndManagerListViewset, CreateClientUserViewSet
+from .views import AdminUserViewset, TransactionsViewset, UserReferralsViewset, ProfitUpdateViewSet, ProtocolFeeViewSet, CommissionUpdateViewSet, MinimumDepositViewSet, MinimumWithdrawViewSet, WalletToPoolViewSet, TopAnnouncementViewSet, AdminManagerViewset, AdminAndManagerListViewset, CreateClientUserViewSet, GetSettingAttributesViewset
 
 router = DefaultRouter()
 
@@ -27,5 +27,6 @@ router.register(r'manager', AdminManagerViewset,
 router.register(r'admin-manager', AdminAndManagerListViewset,
                 basename='admin-manager')
 router.register(r'create-client', CreateClientUserViewSet, basename='create-client')
+router.register(r'setting-attrs', GetSettingAttributesViewset, basename='attrs')
 
 urlpatterns = router.urls
