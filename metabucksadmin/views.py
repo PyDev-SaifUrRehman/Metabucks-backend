@@ -45,11 +45,13 @@ class AdminUserViewset(ModelViewSet):
         total_deposit = Transaction.objects.filter(transaction_type = 'Deposit').aggregate(depo = Sum("amount"))["depo"] or 0
         total_withdrawal = Transaction.objects.filter(transaction_type = 'Withdrawal').aggregate(withdraw = Sum("amount"))["withdraw"] or 0
         total_maturity = ClientUser.objects.all().aggregate(maturity = Sum("maturity"))["maturity"] or 0
+        total_comission =  Transaction.objects.filter(transaction_type = 'Referral').aggregate(referral = Sum("amount"))["referral"] or 0
+        total_withdrawal_and_commission = total_withdrawal + total_comission
         data = {
             'wallet_address': queryset.wallet_address,
             'user_type': queryset.user_type,
             'total_deposit': total_deposit ,
-            'total_withdrawal': total_withdrawal,
+            'total_withdrawal': total_withdrawal_and_commission,
             'total_maturity': total_deposit*2,
         }
         queryset.total_deposit = total_deposit

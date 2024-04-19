@@ -52,9 +52,8 @@ class ReferralSerializer(serializers.ModelSerializer):
     commission_earned = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True)
     no_of_referred_users = serializers.IntegerField(read_only=True)
-    commission_transactions = TransactionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Referral
         fields = ['id', 'user', 'commission_earned',
-                  'no_of_referred_users', 'commission_transactions']
+                  'no_of_referred_users']

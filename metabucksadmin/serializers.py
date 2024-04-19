@@ -69,15 +69,15 @@ class AdminTransactionSerializer(serializers.ModelSerializer):
 
 
 class AdminReferralSerializer(serializers.ModelSerializer):
-    referrer = serializers.SerializerMethodField(source='sender')
+    referee = serializers.SerializerMethodField(source='sender')
     referred_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
-        fields = ['referrer', 'transaction_type',
+        fields = ['referee', 'transaction_type',
                   'crypto_name', 'amount', 'timestamp', 'referred_by']
 
-    def get_referrer(self, obj):
+    def get_referee(self, obj):
         return obj.sender.wallet_address
 
     def get_referred_by(self, obj):
@@ -317,7 +317,6 @@ class AdminManagerSerializer(serializers.Serializer):
         wallet_address_from_cookie = self.context['request'].query_params.get(
             'address')
         if wallet_address_from_cookie is None:
-            # return Response({"detail": "No wallet address"}, status=status.HTTP_403_FORBIDDEN)
             raise ValidationError(
                     "No wallet address")
             
