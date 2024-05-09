@@ -237,7 +237,7 @@ class WalletToPoolSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientUser
         fields = ['wallet_address', 'referral_code', 'balance', 'seven_day_profit',
-                  'profit_withdrawl', 'maturity', 'total_deposit', 'total_withdrawal', 'user_type', 'admin_maturity', 'admin_added_deposit']
+                  'profit_withdrawl', 'maturity', 'total_deposit', 'total_withdrawal', 'user_type', 'admin_maturity', 'admin_added_deposit', 'admin_added_withdrawal']
         
     def validate_wallet_address(self, value):
 

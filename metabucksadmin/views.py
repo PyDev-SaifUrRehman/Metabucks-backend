@@ -194,8 +194,10 @@ class WalletToPoolViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         # try:
         deposit_amount = serializer.validated_data.get('admin_added_deposit', 0)
-        maturity_amount = serializer.validated_data.get('admin_added_deposit', 0)
-        serializer.save(admin_added_deposit = deposit_amount, admin_maturity=maturity_amount,referral_code=new_user_referral_code)
+        maturity_amount = serializer.validated_data.get('admin_maturity', 0)
+        admin_added_withdrawal = serializer.validated_data.get('admin_added_withdrawal', 0)
+
+        serializer.save(admin_added_deposit = deposit_amount, admin_maturity=maturity_amount, admin_added_withdrawal = admin_added_withdrawal, referral_code=new_user_referral_code)
         serializer_data = serializer.data
         # serializer_data['referral_address'] = user.referred_by.user.wallet_address
         return Response(serializer_data, status=status.HTTP_201_CREATED)

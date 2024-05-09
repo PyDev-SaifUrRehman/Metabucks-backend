@@ -111,7 +111,7 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
             total_deposit=models.Sum('amount'))['total_deposit'] or 0
         total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
             total_withdrawal= models.Sum('amount'))['total_withdrawal'] or 0
-        total_withdrawal = instance.total_withdrawal + total_withdrawal
+        total_withdrawal = instance.admin_added_withdrawal + total_withdrawal
         total_deposit = instance.admin_added_deposit + total_deposit
         maturity = total_deposit*2
         maturity = instance.admin_maturity + maturity
