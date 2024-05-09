@@ -112,7 +112,11 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
         total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
             total_withdrawal= models.Sum('amount'))['total_withdrawal'] or 0
         total_withdrawal = instance.total_withdrawal + total_withdrawal
+        total_deposit = instance.admin_added_deposit + total_deposit
         maturity = total_deposit*2
+        maturity = instance.admin_maturity + maturity
+        if instance.admin_maturity:
+            maturity = maturity - instance.admin_added_deposit*2
         try:
             referrals = Referral.objects.get(user = instance
                                                 ).no_of_referred_users

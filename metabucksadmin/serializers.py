@@ -225,10 +225,26 @@ class MinimumWithdrawSerializer(serializers.ModelSerializer):
                 "No wallet address")
 
 
+
 class WalletToPoolSerializer(serializers.ModelSerializer):
+    referral_code = serializers.CharField(read_only=True)
+    total_deposit = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required = False)
+    total_withdrawal = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True)
+    user_type = serializers.BooleanField(required=False)
+
     class Meta:
-        model = WalletToPool
-        fields = ('wallet_address', 'deposit_amount', 'maturity_amount')
+        model = ClientUser
+        fields = ['wallet_address', 'referral_code', 'balance', 'seven_day_profit',
+                  'profit_withdrawl', 'maturity', 'total_deposit', 'total_withdrawal', 'user_type', 'admin_maturity', 'admin_added_deposit']
+        
+    def validate_wallet_address(self, value):
+
+        if BaseUser.objects.filter(wallet_address=value).exists():
+            raise serializers.ValidationError(
+                "Wallet address already registered!!")
+        return value
 
     def validate(self, attrs):
         wallet_address_from_cookie = self.context['request'].query_params.get(

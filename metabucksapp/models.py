@@ -16,6 +16,8 @@ class BaseUser(models.Model):
         max_digits=10, decimal_places=2, default=0)
     user_type = models.CharField(
         max_length=20, choices=USER_TYPE_CHOICES)
+    admin_added_deposit  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    admin_maturity  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self) -> str:
         return self.wallet_address

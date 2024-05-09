@@ -183,15 +183,26 @@ class MinimumWithdrawViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+from metabucksapp.utils import generate_invitation_code
 class WalletToPoolViewSet(viewsets.ViewSet):
     def create(self, request):
         serializer = WalletToPoolSerializer(
             data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        new_user_referral_code = generate_invitation_code()
+
+        serializer.is_valid(raise_exception=True)
+        # try:
+        deposit_amount = serializer.validated_data.get('admin_added_deposit', 0)
+        maturity_amount = serializer.validated_data.get('admin_added_deposit', 0)
+        serializer.save(admin_added_deposit = deposit_amount, admin_maturity=maturity_amount,referral_code=new_user_referral_code)
+        serializer_data = serializer.data
+        # serializer_data['referral_address'] = user.referred_by.user.wallet_address
+        return Response(serializer_data, status=status.HTTP_201_CREATED)
+        # if serializer.is_valid():
+        #     serializer.save()
+        #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminManagerViewset(viewsets.ModelViewSet):
