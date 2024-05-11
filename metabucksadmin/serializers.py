@@ -3,7 +3,7 @@ from metabucksapp.models import Transaction
 from metabucksapp.models import ClientUser
 from metabucksapp.models import Referral, BaseUser
 from rest_framework import serializers
-from .models import AdminUser, AdminTransaction, ProfitUpdate, ProtocolFee, CommissionUpdate, MinimumDeposit, MinimumWithdraw, WalletToPool, TopAnnouncement, ManagerUser
+from .models import AdminUser, AdminTransaction, ProfitUpdate, ProtocolFee, CommissionUpdate, MinimumDeposit, MinimumWithdraw, TopAnnouncement, ManagerUser
 from metabucksapp.serializers import ReferralSerializer
 
 

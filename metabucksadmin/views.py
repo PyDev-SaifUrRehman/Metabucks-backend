@@ -13,7 +13,7 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum
 from metabucksapp.utils import generate_invitation_code
-from .models import AdminUser, AdminTransaction, BaseUser, ProfitUpdate, ProtocolFee, CommissionUpdate, MinimumDeposit, MinimumWithdraw, WalletToPool, TopAnnouncement, ManagerUser
+from .models import AdminUser, AdminTransaction, BaseUser, ProfitUpdate, ProtocolFee, CommissionUpdate, MinimumDeposit, MinimumWithdraw, TopAnnouncement, ManagerUser
 from .serializers import AdminSerializer, AdminTransactionSerializer, AdminReferralSerializer, ProfitUpdateSerializer, ProtocolFeeSerializer, CommissionUpdateSerializer, MinimumDepositSerializer, MinimumWithdrawSerializer, WalletToPoolSerializer, TopAnnouncementSerializer, ManagerSerializer, AdminManagerSerializer, GetAdminSerializer
 from metabucksapp.models import ClientUser
 from metabucksapp.serializers import ClientUserSerializer
@@ -42,23 +42,25 @@ class AdminUserViewset(ModelViewSet):
             return Response({"detail": "You don't have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
         queryset = admin_user
         serializer = GetAdminSerializer(queryset, many=True)
-        total_deposit = Transaction.objects.filter(transaction_type = 'Deposit').aggregate(depo = Sum("amount"))["depo"] or 0
+        total_deposit = Transaction.objects.filter(transaction_type = 'Deposit').aggregate(depo = Sum("amount"))["depo"] or 0     
         total_withdrawal = Transaction.objects.filter(transaction_type = 'Withdrawal').aggregate(withdraw = Sum("amount"))["withdraw"] or 0
         total_maturity = ClientUser.objects.all().aggregate(maturity = Sum("maturity"))["maturity"] or 0
         total_comission =  Transaction.objects.filter(transaction_type = 'Referral').aggregate(referral = Sum("amount"))["referral"] or 0
         total_withdrawal_and_commission = total_withdrawal + total_comission
+        admin_added_deposit = ClientUser.objects.all().aggregate(admin_added_deposit = Sum("admin_added_deposit"))["admin_added_deposit"] or 0
+        admin_maturity = ClientUser.objects.all().aggregate(admin_maturity = Sum("admin_maturity"))["admin_maturity"] or 0
+        admin_added_withdrawal = ClientUser.objects.all().aggregate(admin_added_withdrawal = Sum("admin_added_withdrawal"))["admin_added_withdrawal"] or 0
         data = {
             'wallet_address': queryset.wallet_address,
             'user_type': queryset.user_type,
-            'total_deposit': total_deposit ,
-            'total_withdrawal': total_withdrawal_and_commission,
-            'total_maturity': total_deposit*2,
+            'total_deposit': total_deposit +admin_added_deposit ,
+            'total_withdrawal': total_withdrawal_and_commission + admin_added_withdrawal,
+            'total_maturity': total_deposit*2 + admin_maturity,
         }
-        queryset.total_deposit = total_deposit
-        queryset.total_withdrawal = total_withdrawal
-        queryset.maturity = total_deposit*2
+        queryset.total_deposit = total_deposit + admin_added_deposit
+        queryset.total_withdrawal = total_withdrawal + admin_added_withdrawal
+        queryset.maturity = total_deposit*2 + admin_maturity
         queryset.save()
-
         return Response({"data": data}, status=status.HTTP_200_OK)
 
 

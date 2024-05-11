@@ -60,14 +60,6 @@ class MinimumWithdraw(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=50)
 
 
-class WalletToPool(models.Model):
-    wallet_address = models.CharField(max_length=100)
-    deposit_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
-    maturity_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
-
-
 class TopAnnouncement(models.Model):
     announcement_text = models.TextField()
     announcement_link = models.URLField(blank=True, null=True)
