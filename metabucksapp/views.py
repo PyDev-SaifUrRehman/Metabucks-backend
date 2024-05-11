@@ -59,10 +59,27 @@ class ClientUserViewSet(viewsets.ModelViewSet):
         total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
             total_withdrawal=models.Sum('amount'))['total_withdrawal'] or 0
         instance.update_balance()
+
+        total_withdrawal = instance.admin_added_withdrawal + total_withdrawal
+        total_deposit = instance.admin_added_deposit + total_deposit
+        maturity = total_deposit*2
+        maturity = instance.admin_maturity + maturity
+        if instance.admin_maturity:
+            maturity = maturity - instance.admin_added_deposit*2
+        try:
+            referrals = Referral.objects.get(user = instance
+                                                ).no_of_referred_users
+        except: 
+            referrals = 0
+        instance.update_balance()
         instance.total_deposit = total_deposit
         instance.total_withdrawal = total_withdrawal
+        instance.maturity = maturity
         instance.save()
-        return Response(serializer.data)
+        serializer_data = serializer.data
+        serializer_data['referral'] = referrals
+        return Response(serializer_data, status=status.HTTP_200_OK)
+        
 
 
 class UserLoginViewset(viewsets.ViewSet):
