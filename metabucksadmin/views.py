@@ -270,7 +270,7 @@ class CreateClientUserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         serializer_data = serializer.data
         return Response(serializer_data, status=status.HTTP_201_CREATED)
 
-class GetSettingAttributesViewset(viewsets.ModelViewSet):
+class GetSettingAttributesViewset(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     def list(self, request, *args, **kwargs):
         data = {}

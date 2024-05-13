@@ -204,11 +204,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
         try:
             min_deposit = MinimumDeposit.objects.get().amount
         except:
-            min_deposit = 0
+            min_deposit = 50
         try:
             min_withdraw = MinimumWithdraw.objects.get().amount
         except:
-            min_withdraw = 0
+            min_withdraw = 50
         if transaction_type == 'Deposit' and amount < min_deposit:
             return Response({'error': f"Minimum amount must be greater than or equal to {min_deposit}"})
         if transaction_type == 'Withdrawal' and amount < min_withdraw:
