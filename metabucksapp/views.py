@@ -218,8 +218,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
             referral = sender.referred_by
             referred_by_user = sender.referred_by.user
             referred_by_maturity = referred_by_user.maturity
+            user_ref_commision = referral.commission_earned
+            print("user_ref", user_ref_commision)
             
-            if referred_by_maturity >= referral_commission:
+            if referred_by_maturity >= user_ref_commision + referral_commission:
                 referred_by_user.total_withdrawal += referral_commission
                 referred_by_user.save()
             
@@ -238,10 +240,32 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 serializer.save(amount = amount)
                 sender.maturity += amount*2
                 sender.save()
-            else:
+
+            elif referred_by_maturity - user_ref_commision < referral_commission :
+                commision_added = referred_by_maturity - user_ref_commision
+                referred_by_user.total_withdrawal += commision_added
+                referred_by_user.save()
+            
+                referral.increase_commission_earned(commision_added)
+
+                commission_transaction = Transaction.objects.create(
+                    sender=referral.user,
+                    amount=commision_added,
+                    crypto_name=crypto_name,
+                    transaction_type='Referral'
+                )
+                referral.commission_transactions = commission_transaction
+                amount = amount-commision_added
+
+                referral.save()
                 serializer.save(amount = amount)
                 sender.maturity += amount*2
                 sender.save()
+
+            serializer.save(amount = amount)
+            sender.maturity += amount*2
+
+            sender.save()
         else:
             serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
