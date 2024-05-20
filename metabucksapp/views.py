@@ -27,11 +27,10 @@ class ClientUserViewSet(viewsets.ModelViewSet):
             user_with_referral_code = ClientUser.objects.get(
                 referral_code=ref_code)
             try:
-                referral = user_with_referral_code.referral
-
-            except Referral.DoesNotExist:
                 referral = Referral.objects.create(
                     user=user_with_referral_code)
+            except Referral.DoesNotExist:
+                return Response({"error": "Error to create ref."})
         except ClientUser.DoesNotExist:
             return Response({"error": "Invalid referral code"}, status=status.HTTP_400_BAD_REQUEST)
         new_user_referral_code = generate_invitation_code()
@@ -162,12 +161,16 @@ class ReferralViewSet(viewsets.ModelViewSet):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            referral = Referral.objects.get(user=instance)
+            referrals = Referral.objects.filter(user=instance)
         except Referral.DoesNotExist:
             return Response({"error": "Referral not found for this user"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(referral)
-        return Response(serializer.data)
+        
+        serializer = self.get_serializer(referrals, many = True)
+        total_referred_users = referrals.aggregate(total_users=models.Sum('no_of_referred_users'))['total_users'] or 0
+        total_commission_earned = referrals.aggregate(total_commission=models.Sum('commission_earned'))['total_commission'] or 0
+        
+        return Response({"no_of_referred_users": total_referred_users,
+            "commission_earned": total_commission_earned})
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -214,13 +217,12 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if transaction_type == 'Withdrawal' and amount < min_withdraw:
             return Response({'error': f"Minimum amount must be greater than or equal to {min_withdraw}"})
         sender = ClientUser.objects.get(id=sender.id)
-        if transaction_type == 'Deposit' and sender.referred_by:
+        if transaction_type == 'Deposit' and sender.referred_by and sender.referred_by.commission_received == False :
+
             referral = sender.referred_by
             referred_by_user = sender.referred_by.user
             referred_by_maturity = referred_by_user.maturity
             user_ref_commision = referral.commission_earned
-            print("user_ref", user_ref_commision)
-            
             if referred_by_maturity >= user_ref_commision + referral_commission:
                 referred_by_user.total_withdrawal += referral_commission
                 referred_by_user.save()
@@ -234,11 +236,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     transaction_type='Referral'
                 )
                 referral.commission_transactions = commission_transaction
-                amount = amount-referral_commission
 
                 referral.save()
                 serializer.save(amount = amount)
                 sender.maturity += amount*2
+                sender.referred_by.mark_commission_received()
                 sender.save()
 
             elif referred_by_maturity - user_ref_commision < referral_commission :
@@ -250,12 +252,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
                 commission_transaction = Transaction.objects.create(
                     sender=referral.user,
-                    amount=commision_added,
+                    amount=amount,
                     crypto_name=crypto_name,
                     transaction_type='Referral'
                 )
                 referral.commission_transactions = commission_transaction
-                amount = amount-commision_added
 
                 referral.save()
                 serializer.save(amount = amount)
@@ -266,6 +267,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             sender.maturity += amount*2
 
             sender.save()
+            sender.referred_by.mark_commission_received()
         else:
             serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)

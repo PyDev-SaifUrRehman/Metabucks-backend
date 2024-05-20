@@ -57,13 +57,14 @@ class ClientUser(BaseUser):
 
 
 class Referral(models.Model):
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         ClientUser, on_delete=models.CASCADE, related_name='referral')
     commission_transactions = models.ForeignKey(
         'Transaction', on_delete=models.CASCADE, blank=True, null=True, related_name='referral_trx')
     no_of_referred_users = models.PositiveIntegerField(default=0)
     commission_earned = models.DecimalField(
         max_digits=10, decimal_places=2, default=0)
+    commission_received = models.BooleanField(default=False)
 
     def increase_referred_users(self):
         self.no_of_referred_users += 1
@@ -71,6 +72,10 @@ class Referral(models.Model):
 
     def increase_commission_earned(self, amount):
         self.commission_earned += amount
+        self.save()
+
+    def mark_commission_received(self):
+        self.commission_received = True
         self.save()
 
     def __str__(self):

@@ -133,7 +133,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://127.0.0.1:3000","https://ffae-119-155-14-51.ngrok-free.app"]
 CORS_ALLOW_HEADERS = ["ngrok-skip-browser-warning","content-type","content-language"]
 CORS_ALLOW_ALL_ORIGINS = True
-CSRF_TRUSTED_ORIGINS=["https://ffae-119-155-14-51.ngrok-free.app"]
+CSRF_TRUSTED_ORIGINS=["https://hqadx.metabucks.io"]
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
