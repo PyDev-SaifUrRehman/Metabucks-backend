@@ -42,12 +42,11 @@ class ClientUser(BaseUser):
     def update_balance(self):
         try:
             referral = self.referral
-            print("reee", referral)
+            print("refff", referral)
             if referral:
                 self.balance = self.seven_day_profit + referral.commission_earned
             else:
                 self.balance = self.seven_day_profit
-            print("blnce", self.balance)
             self.save()
         except:
             pass

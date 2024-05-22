@@ -32,7 +32,6 @@ class AdminUserViewset(ModelViewSet):
             try:
                 admin_user = AdminUser.objects.get(
                     wallet_address=wallet_address_from_cookie) or ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)
-                print("admin", admin_user)
             except AdminUser.DoesNotExist:
                 try:
                     admin_user = ManagerUser.objects.get(wallet_address=wallet_address_from_cookie)

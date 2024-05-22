@@ -10,6 +10,6 @@ router.register(r'get-ref-address', GetRefAdressViewset,
                 basename='get-ref-address')
 router.register(r'login', UserLoginViewset, basename='login')
 router.register(r'user-ref', ReferralViewSet, basename='refer')
-router.register(r'transactions', TransactionViewSet, basename='trx')
+router.register(r'transactions', TransactionViewSet, basename='client-trx')
 
 urlpatterns = router.urls

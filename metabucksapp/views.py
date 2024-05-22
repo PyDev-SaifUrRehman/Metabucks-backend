@@ -47,8 +47,8 @@ class ClientUserViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         try:
             wallet_address_from_cookie = request.query_params.get('address')
-            instance = ClientUser.objects.get(
-                wallet_address=wallet_address_from_cookie)
+            instance = ClientUser.objects.select_related('referred_by').prefetch_related('transactions').get(wallet_address=wallet_address_from_cookie)
+
         except (ObjectDoesNotExist, ValueError):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
@@ -117,20 +117,11 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
     def list(self, request, *args, **kwargs):
         try:
             wallet_address_from_cookie = request.query_params.get('address')
-            instance = ClientUser.objects.get(
-                wallet_address=wallet_address_from_cookie)
+            instance = ClientUser.objects.select_related('referred_by').prefetch_related('transactions').get(wallet_address=wallet_address_from_cookie)
+
         except (ObjectDoesNotExist, ValueError):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
-        serializer = self.get_serializer(instance)
-        transactions = instance.transactions.all()
-        total_deposit = transactions.filter(transaction_type='Deposit').aggregate(
-            total_deposit=models.Sum('amount'))['total_deposit'] or 0
-        total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
-            total_withdrawal= models.Sum('amount'))['total_withdrawal'] or 0
-        total_withdrawal = instance.admin_added_withdrawal + total_withdrawal
-        total_deposit = instance.admin_added_deposit + total_deposit
-        maturity = total_deposit*2
-        maturity = instance.admin_maturity + maturity
+        maturity = instance.admin_maturity + instance.maturity
         if instance.admin_maturity:
             maturity = maturity - instance.admin_added_deposit*2
         try:
@@ -139,10 +130,9 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
         except: 
             referrals = 0
         instance.update_balance()
-        instance.total_deposit = total_deposit
-        instance.total_withdrawal = total_withdrawal
         instance.maturity = maturity
         instance.save()
+        serializer = self.get_serializer(instance)
         serializer_data = serializer.data
         serializer_data['referral'] = referrals
         return Response(serializer_data, status=status.HTTP_200_OK)
@@ -174,7 +164,8 @@ class ReferralViewSet(viewsets.ModelViewSet):
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
-    queryset = Transaction.objects.all()
+    queryset = Transaction.objects.all().select_related('sender')
+
     serializer_class = TransactionSerializer
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_fields = ['crypto_name',
@@ -217,59 +208,60 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if transaction_type == 'Withdrawal' and amount < min_withdraw:
             return Response({'error': f"Minimum amount must be greater than or equal to {min_withdraw}"})
         sender = ClientUser.objects.get(id=sender.id)
-        if transaction_type == 'Deposit' and sender.referred_by and sender.referred_by.commission_received == False :
+        if transaction_type == 'Deposit':
+            if sender.referred_by and sender.referred_by.commission_received == False :
+                referral = sender.referred_by
+                referred_by_user = sender.referred_by.user
+                referred_by_maturity = referred_by_user.maturity
+                user_ref_commision = referral.commission_earned
+                if referred_by_maturity - referred_by_user.total_withdrawal >= referral_commission:
+                    referred_by_user.total_withdrawal += referral_commission
+                    referred_by_user.save()
+                    referral.increase_commission_earned(referral_commission)
+                    commission_transaction = Transaction.objects.create(
+                        sender=referral.user,
+                        amount=referral_commission,
+                        crypto_name=crypto_name,
+                        transaction_type='Referral'
+                    )
+                    referral.commission_transactions = commission_transaction
+                    referral.user.total_withdrawal += referral_commission
+                    referral.save()
+                    serializer.save(amount = amount)
+                    sender.maturity += amount*2
+                    sender.referred_by.mark_commission_received()
+                    sender.total_deposit += amount
+                    sender.save()
+                elif referred_by_maturity - referred_by_user.total_withdrawal < referral_commission and referred_by_maturity- referred_by_user.total_withdrawal != 0:
+                    commision_added = referred_by_maturity - referred_by_user.total_withdrawal
+                    referred_by_user.total_withdrawal += commision_added
+                    referred_by_user.save()
+                    referral.increase_commission_earned(commision_added)
+                    commission_transaction = Transaction.objects.create(
+                        sender=referral.user,
+                        amount=commision_added,
+                        crypto_name=crypto_name,
+                        transaction_type='Referral'
+                    )
+                    referral.commission_transactions = commission_transaction
 
-            referral = sender.referred_by
-            referred_by_user = sender.referred_by.user
-            referred_by_maturity = referred_by_user.maturity
-            user_ref_commision = referral.commission_earned
-            if referred_by_maturity >= user_ref_commision + referral_commission:
-                referred_by_user.total_withdrawal += referral_commission
-                referred_by_user.save()
-            
-                referral.increase_commission_earned(referral_commission)
+                    referral.save()
+                    serializer.save(amount = amount)
+                    sender.maturity += amount*2
+                    sender.total_deposit += amount
+                    sender.referred_by.mark_commission_received()
+                    sender.save()
 
-                commission_transaction = Transaction.objects.create(
-                    sender=referral.user,
-                    amount=referral_commission,
-                    crypto_name=crypto_name,
-                    transaction_type='Referral'
-                )
-                referral.commission_transactions = commission_transaction
-
-                referral.save()
-                serializer.save(amount = amount)
+            else:
+                serializer.save(amount = amount, )
                 sender.maturity += amount*2
-                sender.referred_by.mark_commission_received()
+                sender.total_deposit += amount
                 sender.save()
-
-            elif referred_by_maturity - user_ref_commision < referral_commission :
-                commision_added = referred_by_maturity - user_ref_commision
-                referred_by_user.total_withdrawal += commision_added
-                referred_by_user.save()
-            
-                referral.increase_commission_earned(commision_added)
-
-                commission_transaction = Transaction.objects.create(
-                    sender=referral.user,
-                    amount=amount,
-                    crypto_name=crypto_name,
-                    transaction_type='Referral'
-                )
-                referral.commission_transactions = commission_transaction
-
-                referral.save()
-                serializer.save(amount = amount)
-                sender.maturity += amount*2
-                sender.save()
-
-            serializer.save(amount = amount)
-            sender.maturity += amount*2
-
-            sender.save()
-            sender.referred_by.mark_commission_received()
         else:
+            sender.total_withdrawal += amount
+            sender.save()
             serializer.save()
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(methods=['get'], detail=False)
