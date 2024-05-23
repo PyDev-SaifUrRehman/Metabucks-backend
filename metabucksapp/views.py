@@ -52,31 +52,17 @@ class ClientUserViewSet(viewsets.ModelViewSet):
         except (ObjectDoesNotExist, ValueError):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
-        transactions = instance.transactions.all()
-        total_deposit = transactions.filter(transaction_type='Deposit').aggregate(
-            total_deposit=models.Sum('amount'))['total_deposit'] or 0
-        total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
-            total_withdrawal=models.Sum('amount'))['total_withdrawal'] or 0
         instance.update_balance()
-
-        total_withdrawal = instance.admin_added_withdrawal + total_withdrawal
-        total_deposit = instance.admin_added_deposit + total_deposit
-        maturity = total_deposit*2
-        maturity = instance.admin_maturity + maturity
-        if instance.admin_maturity:
-            maturity = maturity - instance.admin_added_deposit*2
         try:
-            referrals = Referral.objects.get(user = instance
-                                                ).no_of_referred_users
+            referrals = Referral.objects.filter(user=instance)
+            total_referred_users = referrals.aggregate(total_users=models.Sum('no_of_referred_users'))['total_users'] or 0
+
+
         except: 
             referrals = 0
         instance.update_balance()
-        instance.total_deposit = total_deposit
-        instance.total_withdrawal = total_withdrawal
-        instance.maturity = maturity
-        instance.save()
         serializer_data = serializer.data
-        serializer_data['referral'] = referrals
+        serializer_data['referral'] = total_referred_users
         return Response(serializer_data, status=status.HTTP_200_OK)
         
 
@@ -180,7 +166,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 sender__wallet_address__in=wallet_address)
         return queryset
-
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -209,7 +194,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
             return Response({'error': f"Minimum amount must be greater than or equal to {min_withdraw}"})
         sender = ClientUser.objects.get(id=sender.id)
         if transaction_type == 'Deposit':
-            if sender.referred_by and sender.referred_by.commission_received == False :
+            
+            if sender.referred_by and sender.referred_by.commission_received == False:
                 referral = sender.referred_by
                 referred_by_user = sender.referred_by.user
                 referred_by_maturity = referred_by_user.maturity
@@ -251,12 +237,19 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     sender.total_deposit += amount
                     sender.referred_by.mark_commission_received()
                     sender.save()
+                
+                else:
+                    
+                    sender.maturity += amount*2
+                    sender.total_deposit += amount
+                    sender.save()
+                    serializer.save(amount = amount)
 
             else:
-                serializer.save(amount = amount, )
                 sender.maturity += amount*2
                 sender.total_deposit += amount
                 sender.save()
+                serializer.save(amount = amount)
         else:
             sender.total_withdrawal += amount
             sender.save()

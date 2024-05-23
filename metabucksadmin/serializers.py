@@ -86,7 +86,7 @@ class AdminReferralSerializer(serializers.ModelSerializer):
             if referred_by:
                 return referred_by
         except:
-            return "aaaaaaaa"
+            return 
 
 
 class ProfitUpdateSerializer(serializers.ModelSerializer):

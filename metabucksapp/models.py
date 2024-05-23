@@ -9,16 +9,16 @@ class BaseUser(models.Model):
     ]
 
     wallet_address = models.CharField(max_length=100)
-    maturity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    maturity = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     total_deposit = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=20, decimal_places=2, default=0)
     total_withdrawal = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=20, decimal_places=2, default=0)
     user_type = models.CharField(
         max_length=20, choices=USER_TYPE_CHOICES)
-    admin_added_deposit  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    admin_maturity  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    admin_added_withdrawal  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    admin_added_deposit  = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    admin_maturity  = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    admin_added_withdrawal  = models.DecimalField(max_digits=20, decimal_places=2, default=0)
 
     def __str__(self) -> str:
         return self.wallet_address
@@ -26,14 +26,14 @@ class BaseUser(models.Model):
 
 class ClientUser(BaseUser):
 
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    referral_code = models.CharField(max_length=100, unique=True)
+    balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    referral_code = models.CharField(max_length=100, unique=True, null = True, blank=True)
     referred_by = models.ForeignKey(
         'Referral', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_user')
     seven_day_profit = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=14, decimal_places=2, default=0)
     profit_withdrawl = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=14, decimal_places=2, default=0)
 
     def save(self, *args, **kwargs):
         self.user_type = 'Client'
@@ -62,7 +62,7 @@ class Referral(models.Model):
         'Transaction', on_delete=models.CASCADE, blank=True, null=True, related_name='referral_trx')
     no_of_referred_users = models.PositiveIntegerField(default=0)
     commission_earned = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0)
+        max_digits=14, decimal_places=2, default=0)
     commission_received = models.BooleanField(default=False)
 
     def increase_referred_users(self):
@@ -90,7 +90,7 @@ class Transaction(models.Model):
 
     sender = models.ForeignKey(
         ClientUser, on_delete=models.CASCADE, related_name='transactions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
     crypto_name = models.CharField(max_length=256)
     transaction_type = models.CharField(
