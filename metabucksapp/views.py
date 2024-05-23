@@ -107,20 +107,19 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
 
         except (ObjectDoesNotExist, ValueError):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
-        # maturity = instance.admin_maturity + instance.maturity
-        # if instance.admin_maturity:
-        #     maturity = maturity - instance.admin_added_deposit*2
+
         try:
-            referrals = Referral.objects.get(user = instance
-                                                ).no_of_referred_users
+            referrals = Referral.objects.filter(user=instance)
+            total_referred_users = referrals.aggregate(total_users=models.Sum('no_of_referred_users'))['total_users'] or 0
+
+
         except: 
             referrals = 0
         instance.update_balance()
-        # instance.maturity = maturity
         instance.save()
         serializer = self.get_serializer(instance)
         serializer_data = serializer.data
-        serializer_data['referral'] = referrals
+        serializer_data['referral'] = total_referred_users
         return Response(serializer_data, status=status.HTTP_200_OK)
 
 
