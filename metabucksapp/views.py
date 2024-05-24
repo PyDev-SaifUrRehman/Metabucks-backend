@@ -149,8 +149,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     serializer_class = TransactionSerializer
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    filterset_fields = ['crypto_name',
-                        'sender__wallet_address', 'transaction_type']
+    filterset_fields = ['crypto_name', 'sender__wallet_address',
+                        'sender__referred_by__user__wallet_address', 'transaction_type']
 
     def get_queryset(self):
         queryset = super().get_queryset()

@@ -64,8 +64,8 @@ class TransactionsViewset(ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = AdminTransactionSerializer
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    filterset_fields = ['crypto_name',
-                        'sender__wallet_address', 'transaction_type']
+    filterset_fields = ['crypto_name','sender__wallet_address',
+                        'sender__referred_by__user__wallet_address', 'transaction_type']
     
     def list(self, request, *args, **kwargs):
         wallet_address_from_cookie = self.request.query_params.get('address')
