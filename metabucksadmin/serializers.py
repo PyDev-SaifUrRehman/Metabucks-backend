@@ -78,13 +78,15 @@ class AdminReferralSerializer(serializers.ModelSerializer):
                   'crypto_name', 'amount', 'timestamp', 'referred_by']
 
     def get_referee(self, obj):
-        return obj.sender.wallet_address
+        try:
+            return obj.sender.wallet_address
+        except:
+            return 
+        
 
     def get_referred_by(self, obj):
         try:
-            referred_by = obj.sender.referred_by.user.wallet_address
-            if referred_by:
-                return referred_by
+            return obj.sender.referred_by.user.wallet_address
         except:
             return 
 

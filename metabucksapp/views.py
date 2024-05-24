@@ -1,18 +1,18 @@
-from django.core.exceptions import ObjectDoesNotExist
 from datetime import timedelta
-from rest_framework.mixins import ListModelMixin
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from rest_framework import filters
+
+from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .utils import generate_invitation_code
 
-from rest_framework import viewsets, status
-from rest_framework.response import Response
 from .models import ClientUser, Referral, Transaction
-from metabucksadmin.models import MinimumDeposit, MinimumWithdraw, CommissionUpdate, BaseUser
 from .serializers import ClientUserSerializer, ReferralSerializer, TransactionSerializer, ClientWalletDetialSerailizer
+from .utils import generate_invitation_code
+from metabucksadmin.models import MinimumDeposit, MinimumWithdraw, CommissionUpdate, BaseUser
 
 
 class ClientUserViewSet(viewsets.ModelViewSet):
@@ -57,14 +57,12 @@ class ClientUserViewSet(viewsets.ModelViewSet):
             referrals = Referral.objects.filter(user=instance)
             total_referred_users = referrals.aggregate(total_users=models.Sum('no_of_referred_users'))['total_users'] or 0
 
-
         except: 
             referrals = 0
         instance.update_balance()
         serializer_data = serializer.data
         serializer_data['referral'] = total_referred_users
-        return Response(serializer_data, status=status.HTTP_200_OK)
-        
+        return Response(serializer_data, status=status.HTTP_200_OK)        
 
 
 class UserLoginViewset(viewsets.ViewSet):
@@ -73,7 +71,6 @@ class UserLoginViewset(viewsets.ViewSet):
 
         try:
             user = BaseUser.objects.get(wallet_address=wallet_address)
-
             response = Response({'message': 'Login successful'})
             max_age_30_days = timedelta(days=30)
             response.set_cookie(
@@ -111,7 +108,6 @@ class ClientWalletDetialViewset(viewsets.GenericViewSet, ListModelMixin):
         try:
             referrals = Referral.objects.filter(user=instance)
             total_referred_users = referrals.aggregate(total_users=models.Sum('no_of_referred_users'))['total_users'] or 0
-
 
         except: 
             referrals = 0
@@ -204,7 +200,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     referred_by_user.save()
                     referral.increase_commission_earned(referral_commission)
                     commission_transaction = Transaction.objects.create(
-                        sender=referral.user,
+                        sender=sender,
                         amount=referral_commission,
                         crypto_name=crypto_name,
                         transaction_type='Referral'
@@ -223,7 +219,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
                     referred_by_user.save()
                     referral.increase_commission_earned(commision_added)
                     commission_transaction = Transaction.objects.create(
-                        sender=referral.user,
+                        # sender=referral.user,
+                        sender=sender,
                         amount=commision_added,
                         crypto_name=crypto_name,
                         transaction_type='Referral'
