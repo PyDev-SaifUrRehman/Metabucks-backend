@@ -261,16 +261,20 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 wallet_address=wallet_address_from_cookie)
         except (ObjectDoesNotExist, ValueError):
             return Response({"detail": "User not found or invalid address"}, status=status.HTTP_404_NOT_FOUND)
-        transactions = Transaction.objects.filter(sender=instance)
+        transactions = Transaction.objects.filter(sender=instance).exclude(transaction_type = 'Referral')
         serializer = self.get_serializer(transactions, many=True)
 
         total_deposit = transactions.filter(transaction_type='Deposit').aggregate(
             total_deposit=models.Sum('amount'))['total_deposit'] or 0
         total_withdrawal = transactions.filter(transaction_type='Withdrawal').aggregate(
             total_withdrawal=models.Sum('amount'))['total_withdrawal'] or 0
+        referrals = Referral.objects.filter(user=instance)
+        total_commission_earned = referrals.aggregate(total_commission=models.Sum('commission_earned'))['total_commission'] or 0
+        
+        
         response_data = {
             'total_deposit': total_deposit,
-            'total_withdrawal': total_withdrawal,
+            'total_withdrawal': total_withdrawal+total_commission_earned,
             'transactions': serializer.data
         }
         return Response(response_data)
