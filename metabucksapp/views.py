@@ -155,7 +155,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = queryset.filter(transaction_type__in=[
-                                   'Deposit', 'Withdrawal', 'Referral', 'Transfer'])
+                                   'Deposit', 'Withdrawal', 'Referral', 'Transfer', 'Receiver'])
         wallet_address = self.request.query_params.get('address')
         if wallet_address:
             queryset = queryset.filter(
