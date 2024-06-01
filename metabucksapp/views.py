@@ -247,8 +247,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 sender.save()
                 serializer.save(amount = amount)
         elif transaction_type == 'Transfer':
-            sender.balance += amount
-            sender.save()
+            serializer.save()
+        elif transaction_type == 'Receiver':
             serializer.save()
 
         else:
