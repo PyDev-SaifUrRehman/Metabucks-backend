@@ -155,7 +155,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = queryset.filter(transaction_type__in=[
-                                   'Deposit', 'Withdrawal', 'Referral', 'Transfer', 'Receiver'])
+                                   'Deposit', 'Withdrawal', 'Referral', 'Transfer', 'Receive'])
         wallet_address = self.request.query_params.get('address')
         if wallet_address:
             queryset = queryset.filter(
@@ -248,7 +248,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 serializer.save(amount = amount)
         elif transaction_type == 'Transfer':
             serializer.save()
-        elif transaction_type == 'Receiver':
+        elif transaction_type == 'Receive':
             serializer.save()
 
         else:
@@ -276,7 +276,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         referrals = Referral.objects.filter(user=instance)
         total_commission_earned = referrals.aggregate(total_commission=models.Sum('commission_earned'))['total_commission'] or 0
         
-        
+
         response_data = {
             'total_deposit': total_deposit,
             'total_withdrawal': total_withdrawal+total_commission_earned,

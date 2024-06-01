@@ -87,7 +87,7 @@ class Transaction(models.Model):
         ('Withdrawal', 'Withdrawal'),
         ('Referral', 'Referral'),
         ('Transfer', 'Transfer'),
-        ('Receiver', 'Receiver'),
+        ('Receive', 'Receive'),
     ]
 
     sender = models.ForeignKey(
