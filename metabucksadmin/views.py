@@ -188,10 +188,21 @@ class WalletToPoolViewSet(viewsets.ViewSet):
             data=request.data, context={'request': request})
         new_user_referral_code = generate_invitation_code()
         serializer.is_valid(raise_exception=True)
+        wallet_address = serializer.validated_data.get('wallet_address')
         deposit_amount = serializer.validated_data.get('admin_added_deposit', 0)
         maturity_amount = serializer.validated_data.get('admin_maturity', 0)
         admin_added_withdrawal = serializer.validated_data.get('admin_added_withdrawal', 0)
+        crypto_name = serializer.validated_data.get('crypto_name', 'USDT')
         serializer.save(total_deposit = deposit_amount, total_withdrawal = admin_added_withdrawal, maturity = maturity_amount, referral_code = new_user_referral_code)
+        try:
+            sender = ClientUser.objects.get(wallet_address = wallet_address)
+            print("sender", sender)
+            if deposit_amount:
+                Transaction.objects.create(sender = sender, amount = deposit_amount, transaction_type = 'Deposit', crypto_name = crypto_name)
+            if admin_added_withdrawal:
+                Transaction.objects.create(sender = sender, amount = admin_added_withdrawal, transaction_type = 'Withdrawal', crypto_name = crypto_name)
+        except:
+            return Response({"message": "something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
         serializer_data = serializer.data
         return Response(serializer_data, status=status.HTTP_201_CREATED)
 

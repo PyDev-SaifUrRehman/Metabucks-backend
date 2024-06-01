@@ -155,7 +155,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = queryset.filter(transaction_type__in=[
-                                   'Deposit', 'Withdrawal', 'Referral'])
+                                   'Deposit', 'Withdrawal', 'Referral', 'Transfer'])
         wallet_address = self.request.query_params.get('address')
         if wallet_address:
             queryset = queryset.filter(
@@ -246,6 +246,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 sender.total_deposit += amount
                 sender.save()
                 serializer.save(amount = amount)
+        elif transaction_type == 'Transfer':
+            sender.balance += amount
+            sender.save()
+            serializer.save()
+
         else:
             sender.total_withdrawal += amount
             sender.save()
