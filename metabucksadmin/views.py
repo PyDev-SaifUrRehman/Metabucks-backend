@@ -18,7 +18,7 @@ from .serializers import AdminSerializer, AdminTransactionSerializer, AdminRefer
 from metabucksapp.models import ClientUser
 from metabucksapp.serializers import ClientUserSerializer
 from metabucksapp.utils import generate_invitation_code
-
+from django.db.models import F
 
 class AdminUserViewset(ModelViewSet):
     serializer_class = AdminSerializer
@@ -45,13 +45,16 @@ class AdminUserViewset(ModelViewSet):
         total_withdrawal = ClientUser.objects.all().aggregate(total_withdrawal = Sum("total_withdrawal"))['total_withdrawal'] or 0
         total_maturity = ClientUser.objects.all().aggregate(maturity = Sum("maturity"))["maturity"] or 0
         total_withdrawal = ClientUser.objects.all().aggregate(total_withdrawal = Sum("total_withdrawal"))["total_withdrawal"] or 0
-        
+        net_deposit = ClientUser.objects.exclude(total_withdrawal=F('maturity')).aggregate(total_deposit = Sum("total_deposit"))['total_deposit'] or 0
+        net_maturity = ClientUser.objects.exclude(total_withdrawal=F('maturity')).aggregate(maturity = Sum("maturity"))["maturity"] or 0
         data = {
             'wallet_address': queryset.wallet_address,
             'user_type': queryset.user_type,
             'total_deposit': total_deposit  ,
             'total_withdrawal': total_withdrawal,
             'total_maturity': total_maturity,
+            'net_deposit':net_deposit,
+            'net_maturity':net_maturity
         }
         queryset.total_deposit = total_deposit 
         queryset.total_withdrawal = total_withdrawal 
